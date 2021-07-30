@@ -1,11 +1,7 @@
-|Travis| |AppVeyor| |GithubActions|
+|GithubActions|
 
 .. |GithubActions| image:: https://github.com/LUGGPublic/CG_Labs/actions/workflows/build.yml/badge.svg
    :target: https://github.com/LUGGPublic/CG_Labs/actions/workflows/build.yml
-.. |Travis| image:: https://travis-ci.com/LUGGPublic/CG_Labs.svg?branch=master
-   :target: https://travis-ci.com/LUGGPublic/CG_Labs
-.. |AppVeyor| image:: https://ci.appveyor.com/api/projects/status/ga1y28ottvmvgif6/branch/master?svg=true
-   :target: https://ci.appveyor.com/project/pierremoreau/cg-labs/branch/master
 
 CG_Labs contains the source code for the various Computer Graphics courses
 taught at `Lund University`_ (EDAF80_ and EDAN35_). All assignments of EDAF80
