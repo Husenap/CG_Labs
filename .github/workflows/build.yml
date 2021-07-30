@@ -15,6 +15,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Install Packages
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash
+      run: apt-get install -y libassimp-dev libglfw3-dev
+
     - name: Generate
       shell: bash
       run: cmake -B.build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
