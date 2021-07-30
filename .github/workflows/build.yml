@@ -18,7 +18,7 @@ jobs:
     - name: Install Packages
       if: matrix.os == 'ubuntu-latest'
       shell: bash
-      run: apt-get install -y libassimp-dev libglfw3-dev
+      run: sudo apt-get install -y libassimp-dev libglfw3-dev
 
     - name: Generate
       shell: bash
