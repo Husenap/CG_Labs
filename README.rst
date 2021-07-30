@@ -1,7 +1,7 @@
 |Travis| |AppVeyor| |GithubActions|
 
-.. |GithubActions| image:: https://github.com/Husenap/CG_Labs/actions/workflows/build.yml/badge.svg
-   :target: https://github.com/Husenap/CG_Labs/actions/workflows/build.yml
+.. |GithubActions| image:: https://github.com/LUGGPublic/CG_Labs/actions/workflows/build.yml/badge.svg
+   :target: https://github.com/LUGGPublic/CG_Labs/actions/workflows/build.yml
 .. |Travis| image:: https://travis-ci.com/LUGGPublic/CG_Labs.svg?branch=master
    :target: https://travis-ci.com/LUGGPublic/CG_Labs
 .. |AppVeyor| image:: https://ci.appveyor.com/api/projects/status/ga1y28ottvmvgif6/branch/master?svg=true
