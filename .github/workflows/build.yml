@@ -20,18 +20,17 @@ jobs:
       shell: bash
       run: sudo apt-get install -y libassimp-dev libglfw3-dev
 
-    - name: Setup vcpkg
+    - name: Setup MSBuild
       if: matrix.os == 'windows-latest'
-      uses: lukka/run-vcpkg@v7
-      with:
-        setupOnly: true
+      uses: microsoft/setup-msbuild@v1
+
     - name: Install Windows packages
       if: matrix.os == 'windows-latest'
       shell: bash
       run: |
-        $VCPKG_ROOT/vcpkg install assimp:x64-windows
-        $VCPKG_ROOT/vcpkg install glfw3:x64-windows
-        $VCPKG_ROOT/vcpkg install glm:x64-windows
+        vcpkg install assimp
+        vcpkg install glfw3
+        vcpkg install glm
 
     - name: Generate
       shell: bash
