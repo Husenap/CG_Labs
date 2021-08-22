@@ -1,6 +1,5 @@
 # Build folders
 build/
-.build/
 Debug/
 Release/
 ipch/

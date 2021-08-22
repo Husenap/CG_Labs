@@ -1,7 +1,7 @@
 |GithubActions|
 
-.. |GithubActions| image:: https://github.com/LUGGPublic/CG_Labs/actions/workflows/build.yml/badge.svg
-   :target: https://github.com/LUGGPublic/CG_Labs/actions/workflows/build.yml
+.. |GithubActions| image:: https://github.com/Husenap/CG_Labs/actions/workflows/build.yml/badge.svg
+   :target: https://github.com/Husenap/CG_Labs/actions/workflows/build.yml
 
 CG_Labs contains the source code for the various Computer Graphics courses
 taught at `Lund University`_ (EDAF80_ and EDAN35_). All assignments of EDAF80

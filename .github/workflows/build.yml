@@ -29,8 +29,8 @@ jobs:
 
     - name: Generate
       shell: bash
-      run: cmake -B.build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+      run: cmake -Bbuild -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
       
     - name: Build
       shell: bash
-      run: cmake --build .build/
+      run: cmake --build build/
