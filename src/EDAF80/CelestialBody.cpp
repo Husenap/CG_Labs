@@ -32,11 +32,12 @@ glm::mat4 CelestialBody::render(std::chrono::microseconds elapsed_time,
 	const auto S = glm::scale(glm::mat4(1.0f), _body.scale);
 	const auto R1s = glm::rotate(glm::mat4(1.f), _body.spin.rotation_angle, {0.f, 1.f, 0.f});
 	const auto R2s = glm::rotate(glm::mat4(1.f), _body.spin.axial_tilt, {0.f, 0.f, 1.f});
+	const auto R3s = glm::rotate(glm::mat4(1.f), -_body.orbit.rotation_angle, { 0.f, 1.f, 0.f });
 	const auto To = glm::translate(glm::mat4(1.f), { _body.orbit.radius, 0.f, 0.f });
 	const auto R1o = glm::rotate(glm::mat4(1.f), _body.orbit.rotation_angle, { 0.f, 1.f, 0.f });
 	const auto R2o = glm::rotate(glm::mat4(1.f), _body.orbit.inclination, { 0.f, 0.f, 1.f });
 
-	const glm::mat4 childTransform = parent_transform * R2o * R1o * To * R2s;
+	const glm::mat4 childTransform = parent_transform * R2o * R1o * To * R3s * R2s;
 	const glm::mat4 planetTransform = childTransform * R1s * S;
 
 	if (show_basis)

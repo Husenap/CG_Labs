@@ -32,7 +32,7 @@ int main()
 	FPSCameraf camera(0.5f * glm::half_pi<float>(),
 	                  static_cast<float>(config::resolution_x) / static_cast<float>(config::resolution_y),
 	                  0.01f, 1000.0f);
-	camera.mWorld.SetTranslate(glm::vec3(0.0f, 4.0f, 20.0f));
+	camera.mWorld.SetTranslate(glm::vec3(0.0f, 0.0f, 30.0f));
 	camera.mWorld.LookAt(glm::vec3(0.0f));
 	camera.mMouseSensitivity = glm::vec2(0.003f);
 	camera.mMovementSpeed = glm::vec3(3.0f); // 3 m/s => 10.8 km/h
@@ -318,7 +318,7 @@ int main()
 		if (opened)
 		{
 			ImGui::Checkbox("Pause the animation", &pause_animation);
-			ImGui::SliderFloat("Time scale", &time_scale, 1e-1f, 10.0f);
+			ImGui::SliderFloat("Time scale", &time_scale, 1e-2f, 100.0f);
 			ImGui::Separator();
 			ImGui::Checkbox("Show basis", &show_basis);
 		}
