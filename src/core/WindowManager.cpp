@@ -4,9 +4,9 @@
 #include "opengl.hpp"
 
 #include <glad/glad.h>
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h>
+#include <imgui/imgui.h>
+#include <imgui/backends/imgui_impl_glfw.h>
+#include <imgui/backends/imgui_impl_opengl3.h>
 
 namespace
 {
@@ -39,8 +39,6 @@ namespace
 		should_close |= (key == GLFW_KEY_ESCAPE);
 		if (should_close)
 			glfwSetWindowShouldClose(window, true);
-
-		ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
 	}
 
 	void MouseCallback(GLFWwindow* window, int button, int action, int mods)
@@ -129,19 +127,6 @@ GLFWwindow* WindowManager::CreateGLFWWindow(std::string const& title, WindowDatu
 		return nullptr;
 	}
 
-	// Setup Dear ImGui context
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-
-	// Setup Dear ImGui style
-	ImGui::StyleColorsDark();
-
-	// Setup Platform/Renderer bindings
-	ImGui_ImplGlfw_InitForOpenGL(window, true);
-	char glsl_version_directive[13];
-	std::snprintf(glsl_version_directive, 13, "#version %d%d0", default_opengl_major_version, default_opengl_minor_version);
-	ImGui_ImplOpenGL3_Init(glsl_version_directive);
-
 	glfwSetKeyCallback(window, KeyCallback);
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
 	glfwSetMouseButtonCallback(window, MouseCallback);
@@ -149,8 +134,7 @@ GLFWwindow* WindowManager::CreateGLFWWindow(std::string const& title, WindowDatu
 	glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
 	glfwSetWindowUserPointer(window, static_cast<void*>(this));
 
-	glfwSetScrollCallback(window, ImGui_ImplGlfw_ScrollCallback);
-	glfwSetCharCallback(window, ImGui_ImplGlfw_CharCallback);
+	InitImGui(window);
 
 	GLint context_flags = 0, profile_mask = 0;
 	glGetIntegerv(GL_CONTEXT_FLAGS, &context_flags);
@@ -205,6 +189,25 @@ GLFWwindow* WindowManager::CreateGLFWWindow(std::string const& title, WindowDatu
 	return window;
 }
 
+void WindowManager::InitImGui(GLFWwindow* window)
+{
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
+
+	// Setup Dear ImGui style
+	ImGui::StyleColorsDark();
+	ImGuiStyle& style = ImGui::GetStyle();
+
+	// Setup Platform/Renderer bindings
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	char glsl_version_directive[13];
+	std::snprintf(glsl_version_directive, 13, "#version %d%d0", default_opengl_major_version, default_opengl_minor_version);
+	ImGui_ImplOpenGL3_Init(glsl_version_directive);
+}
+
 void WindowManager::DestroyWindow(GLFWwindow* const window)
 {
 	ImGui_ImplOpenGL3_Shutdown();
@@ -223,6 +226,7 @@ void WindowManager::NewImGuiFrame()
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
+	ImGui::DockSpaceOverViewport(nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
 }
 
 void WindowManager::RenderImGuiFrame(bool show_gui)
