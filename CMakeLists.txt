@@ -118,6 +118,7 @@ target_compile_options (
 		$<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:MSVC>>:/utf-8;/Zc:__cplusplus>
 )
 target_compile_features (CG_Labs_options INTERFACE cxx_std_14)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
 
 # Define another “fake” library that provides a common setup for all
