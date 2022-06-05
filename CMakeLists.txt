@@ -66,6 +66,9 @@ include (CMake/InstallTinyFileDialogs.cmake)
 # stb is used for loading in image files.
 include (CMake/InstallSTB.cmake)
 
+# Dear ImGui is used to display UI panels for logs and controls.
+include (CMake/InstallImGui.cmake)
+
 # Resources are found in an external archive
 include (CMake/RetrieveResourceArchive.cmake)
 

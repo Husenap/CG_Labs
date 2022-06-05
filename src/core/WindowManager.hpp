@@ -38,6 +38,7 @@ public:
 	~WindowManager();
 
 	GLFWwindow* CreateGLFWWindow(std::string const& title, WindowDatum const& data, unsigned int msaa = 1u, bool fullscreen = false, bool resizable = false, SwapStrategy swap = SwapStrategy::enable_vsync);
+	void InitImGui(GLFWwindow* window);
 	void DestroyWindow(GLFWwindow* const window);
 	void NewImGuiFrame();
 	void RenderImGuiFrame(bool show_gui);
