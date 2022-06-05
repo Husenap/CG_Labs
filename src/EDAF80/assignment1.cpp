@@ -7,6 +7,7 @@
 #include "core/node.hpp"
 #include "core/ShaderProgramManager.hpp"
 
+#include <glm/gtx/matrix_decompose.hpp>
 #include <imgui.h>
 
 #include <stack>
@@ -218,7 +219,8 @@ int main()
 	sun.add_child(&uranus);
 	sun.add_child(&neptune);
 
-
+	int followedBody = 0;
+	CelestialBody* indexToBody[] = { nullptr, &mercury, &venus, &earth, &moon, &mars, &jupiter, &saturn, &uranus, &neptune};
 
 	//
 	// Define the colour and depth used for clearing.
@@ -255,7 +257,11 @@ int main()
 		ImGuiIO const& io = ImGui::GetIO();
 		input_handler.SetUICapture(io.WantCaptureMouse, io.WantCaptureKeyboard);
 		input_handler.Advance();
-		camera.Update(delta_time_us, input_handler);
+
+		CelestialBody* bodyToFollow = indexToBody[followedBody];
+		if (!bodyToFollow) {
+			camera.Update(delta_time_us, input_handler);
+		}
 
 		if (input_handler.GetKeycodeState(GLFW_KEY_F3) & JUST_RELEASED)
 			show_logs = !show_logs;
@@ -282,7 +288,6 @@ int main()
 		//
 		window_manager.NewImGuiFrame();
 
-
 		//
 		// Clear the screen
 		//
@@ -300,14 +305,31 @@ int main()
 		// TODO: Replace this explicit rendering of the Earth and Moon
 		// with a traversal of the scene graph and rendering of all its
 		// nodes.
+
+		glm::mat4 followMatrix;
+
 		std::stack<CelestialBodyRef> stack({ {&sun, glm::mat4(1.f)} });
 		while (!stack.empty() ){
 			const auto ref = stack.top();
 			stack.pop();
 			const auto transform = ref.body->render(animation_delta_time_us, camera.GetWorldToClipMatrix(), ref.parent_transform, show_basis);
+			if (ref.body == bodyToFollow) {
+				followMatrix = transform;
+			}
 			for (auto& child : ref.body->get_children()) {
 				stack.push({ child, transform });
 			}
+		}
+
+		if (bodyToFollow) {
+			glm::vec3 scale;
+			glm::quat rotation;
+			glm::vec3 translation;
+			glm::vec3 skew;
+			glm::vec4 perspective;
+			glm::decompose(followMatrix, scale, rotation, translation, skew, perspective);
+			camera.mWorld.SetTranslate(translation + glm::normalize(translation) + glm::vec3(0.f, 0.5f, 0.f));
+			camera.mWorld.LookAt(glm::vec3());
 		}
 
 
@@ -321,6 +343,8 @@ int main()
 			ImGui::SliderFloat("Time scale", &time_scale, 1e-2f, 100.0f);
 			ImGui::Separator();
 			ImGui::Checkbox("Show basis", &show_basis);
+			ImGui::Separator();
+			ImGui::Combo("Follow Planet", &followedBody, "None\0Mercury\0Venus\0Earth\0Moon\0Mars\0Jupiter\0Saturn\0Uranus\0Neptune\0\0");
 		}
 		ImGui::End();
 
