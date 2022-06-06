@@ -14,6 +14,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <array>
+#include <cmath>
 #include <clocale>
 #include <cstdlib>
 #include <stdexcept>
