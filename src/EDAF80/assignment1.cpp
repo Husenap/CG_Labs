@@ -310,7 +310,7 @@ int main()
 
 		std::stack<CelestialBodyRef> stack({ {&sun, glm::mat4(1.f)} });
 		while (!stack.empty() ){
-			const auto ref = stack.top();
+			const auto& ref = stack.top();
 			stack.pop();
 			const auto transform = ref.body->render(animation_delta_time_us, camera.GetWorldToClipMatrix(), ref.parent_transform, show_basis);
 			if (ref.body == bodyToFollow) {
