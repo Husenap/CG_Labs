@@ -43,7 +43,9 @@ void
 edaf80::Assignment2::run()
 {
 	// Load the sphere geometry
-	auto const shape = parametric_shapes::createCircleRing(2.0f, 0.75f, 40u, 4u);
+	//auto const shape = parametric_shapes::createQuad(0.25f, 0.15f);
+	//auto const shape = parametric_shapes::createSphere(0.15f, 10u, 10u);
+	auto const shape = parametric_shapes::createTorus(0.2f, 0.05f, 16u, 16u);
 	if (shape.vao == 0u)
 		return;
 
@@ -123,7 +125,7 @@ edaf80::Assignment2::run()
 
 	// Set whether to show the control points or not; it can always be changed
 	// at runtime through the "Scene Controls" window.
-	bool show_control_points = true;
+	bool show_control_points = false;
 
 	auto circle_rings = Node();
 	circle_rings.set_geometry(shape);
@@ -164,6 +166,8 @@ edaf80::Assignment2::run()
 
 	std::int32_t program_index = 0;
 	float elapsed_time_s = 0.0f;
+	float speed = 1.0f;
+	float alpha = 0.f;
 	auto cull_mode = bonobo::cull_mode_t::disabled;
 	auto polygon_mode = bonobo::polygon_mode_t::fill;
 	bool show_logs = true;
@@ -214,19 +218,29 @@ edaf80::Assignment2::run()
 
 
 		if (interpolate) {
-			//! \todo Interpolate the movement of a shape between various
-			//!        control points.
+			static float previousTime = elapsed_time_s;
+			alpha += (elapsed_time_s - previousTime) * speed;
+			previousTime = elapsed_time_s;
+			const auto previousPosition = circle_rings.get_transform().GetTranslation();
 			if (use_linear) {
-				//! \todo Compute the interpolated position
-				//!       using the linear interpolation.
+				const int index0 = static_cast<int>(std::floor(alpha)) % control_point_locations.size();
+				const int index1 = (index0 + 1) % control_point_locations.size();
+				const auto pos = interpolation::evalLERP(control_point_locations[index0], control_point_locations[index1], std::fmodf(alpha, 1.f));
+				circle_rings.get_transform().SetTranslate(pos);
+			} else {
+				const int index0 = (static_cast<int>(std::floor(alpha)) + control_point_locations.size() - 1) % control_point_locations.size();
+				const int index1 = (index0 + 1) % control_point_locations.size();
+				const int index2 = (index1 + 1) % control_point_locations.size();
+				const int index3 = (index2 + 1) % control_point_locations.size();
+				const auto pos = interpolation::evalCatmullRom(control_point_locations[index0], control_point_locations[index1], control_point_locations[index2], control_point_locations[index3], catmull_rom_tension, std::fmodf(alpha, 1.f));
+				circle_rings.get_transform().SetTranslate(pos);
 			}
-			else {
-				//! \todo Compute the interpolated position
-				//!       using the Catmull-Rom interpolation;
-				//!       use the `catmull_rom_tension`
-				//!       variable as your tension argument.
-			}
+			circle_rings.get_transform().LookTowards(circle_rings.get_transform().GetTranslation() - previousPosition);
 		}
+
+		mCamera.mWorld.SetTranslate(
+			circle_rings.get_transform().GetTranslation() + circle_rings.get_transform().GetRight() * (0.4f + 0.05f * std::cos(alpha)) + circle_rings.get_transform().GetUp() * (0.4f + 0.05f * std::sin(alpha * 2.17f)) + circle_rings.get_transform().GetBack() * 0.5f);
+		mCamera.mWorld.LookAt(circle_rings.get_transform().GetTranslation() + circle_rings.get_transform().GetFront(), circle_rings.get_transform().GetUp());
 
 		circle_rings.render(mCamera.GetWorldToClipMatrix());
 		if (show_control_points) {
@@ -251,6 +265,7 @@ edaf80::Assignment2::run()
 			ImGui::Checkbox("Enable interpolation", &interpolate);
 			ImGui::Checkbox("Use linear interpolation", &use_linear);
 			ImGui::SliderFloat("Catmull-Rom tension", &catmull_rom_tension, 0.0f, 1.0f);
+			ImGui::SliderFloat("Animation Speed", &speed, 0.1f, 10.f);
 			ImGui::Separator();
 			ImGui::Checkbox("Show basis", &show_basis);
 			ImGui::SliderFloat("Basis thickness scale", &basis_thickness_scale, 0.0f, 100.0f);
