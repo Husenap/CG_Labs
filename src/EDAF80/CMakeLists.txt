@@ -88,6 +88,20 @@ target_link_libraries (EDAF80_Assignment5 PRIVATE assignment_setup)
 copy_dlls (EDAF80_Assignment5 "${CMAKE_CURRENT_BINARY_DIR}")
 
 
+add_executable (Verlet)
+target_sources (
+	Verlet
+	PRIVATE
+		[[solver.hpp]]
+		[[verlet.cpp]]
+)
+target_link_libraries (
+	Verlet
+	PRIVATE assignment_setup interpolation parametric_shapes
+)
+copy_dlls (Verlet "${CMAKE_CURRENT_BINARY_DIR}")
+
+
 install (
 	TARGETS
 		EDAF80_Assignment1
