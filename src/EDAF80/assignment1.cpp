@@ -1,4 +1,4 @@
-#include "assignment1.hpp"
+#include "CelestialBody.hpp"
 #include "config.hpp"
 #include "parametric_shapes.hpp"
 #include "core/Bonobo.h"
@@ -7,8 +7,10 @@
 #include "core/node.hpp"
 #include "core/ShaderProgramManager.hpp"
 
+#include <glm/gtx/matrix_decompose.hpp>
 #include <imgui.h>
 
+#include <stack>
 #include <clocale>
 #include <cstdlib>
 
@@ -31,10 +33,10 @@ int main()
 	FPSCameraf camera(0.5f * glm::half_pi<float>(),
 	                  static_cast<float>(config::resolution_x) / static_cast<float>(config::resolution_y),
 	                  0.01f, 1000.0f);
-	camera.mWorld.SetTranslate(glm::vec3(0.0f, 0.0f, 6.0f));
+	camera.mWorld.SetTranslate(glm::vec3(0.0f, 0.0f, 30.0f));
 	camera.mWorld.LookAt(glm::vec3(0.0f));
-	camera.mMouseSensitivity = 0.003f;
-	camera.mMovementSpeed = 3.0f; // 3 m/s => 10.8 km/h
+	camera.mMouseSensitivity = glm::vec2(0.003f);
+	camera.mMovementSpeed = glm::vec3(3.0f); // 3 m/s => 10.8 km/h
 
 	//
 	// Create the window
@@ -48,12 +50,16 @@ int main()
 		return EXIT_FAILURE;
 	}
 
+	bonobo::init();
+
 	//
 	// Load the sphere geometry
 	//
 	std::vector<bonobo::mesh_data> const objects = bonobo::loadObjects(config::resources_path("scenes/sphere.obj"));
 	if (objects.empty()) {
 		LogError("Failed to load the sphere geometry: exiting.");
+
+		bonobo::deinit();
 
 		return EXIT_FAILURE;
 	}
@@ -73,8 +79,7 @@ int main()
 	if (celestial_body_shader == 0u) {
 		LogError("Failed to generate the “Celestial Body” shader program: exiting.");
 
-		Log::View::Destroy();
-		Log::Destroy();
+		bonobo::deinit();
 
 		return EXIT_FAILURE;
 	}
@@ -86,8 +91,7 @@ int main()
 	if (celestial_ring_shader == 0u) {
 		LogError("Failed to generate the “Celestial Ring” shader program: exiting.");
 
-		Log::View::Destroy();
-		Log::Destroy();
+		bonobo::deinit();
 
 		return EXIT_FAILURE;
 	}
@@ -96,45 +100,45 @@ int main()
 	//
 	// Define all the celestial bodies constants.
 	//
-	glm::vec3 const sun_scale{1.0f};
-	SpinConfiguration const sun_spin{glm::radians(0.0f), glm::two_pi<float>() / 6.0f};
+	glm::vec3 const sun_scale{ 1.0f };
+	SpinConfiguration const sun_spin{ glm::radians(0.0f), glm::two_pi<float>() / 6.0f };
 
-	glm::vec3 const mercury_scale{0.02f};
-	SpinConfiguration const mercury_spin{glm::radians(2.0f), glm::two_pi<float>() / 180.0f};
-	OrbitConfiguration const mercury_orbit{2.0f, glm::radians(3.4f), glm::two_pi<float>() / 4.0f};
+	glm::vec3 const mercury_scale{ 0.02f };
+	SpinConfiguration const mercury_spin{ glm::radians(-0.0f), glm::two_pi<float>() / 180.0f };
+	OrbitConfiguration const mercury_orbit{ 2.0f, glm::radians(-3.4f), glm::two_pi<float>() / 4.0f };
 
-	glm::vec3 const venus_scale{0.05f};
-	SpinConfiguration const venus_spin{glm::radians(177.0f), glm::two_pi<float>() / 600.0f};
-	OrbitConfiguration const venus_orbit{3.0f, glm::radians(3.9f), glm::two_pi<float>() / 12.0f};
+	glm::vec3 const venus_scale{ 0.05f };
+	SpinConfiguration const venus_spin{ glm::radians(-2.6f), -glm::two_pi<float>() / 600.0f };
+	OrbitConfiguration const venus_orbit{ 3.0f, glm::radians(-3.9f), glm::two_pi<float>() / 12.0f };
 
-	glm::vec3 const earth_scale{0.05f};
-	SpinConfiguration const earth_spin{glm::radians(23.0f), glm::two_pi<float>() / 3.0f};
-	OrbitConfiguration const earth_orbit{4.0f, glm::radians(7.2f), glm::two_pi<float>() / 20.0f};
+	glm::vec3 const earth_scale{ 0.05f };
+	SpinConfiguration const earth_spin{ glm::radians(-23.0f), glm::two_pi<float>() / 3.0f };
+	OrbitConfiguration const earth_orbit{ 4.0f, glm::radians(-7.2f), glm::two_pi<float>() / 20.0f };
 
-	glm::vec3 const moon_scale{0.01f};
-	SpinConfiguration const moon_spin{glm::radians(6.7f), glm::two_pi<float>() / 90.0f};
-	OrbitConfiguration const moon_orbit{0.2f, glm::radians(-66.0f), glm::two_pi<float>() / 1.3f};
+	glm::vec3 const moon_scale{ 0.01f };
+	SpinConfiguration const moon_spin{ glm::radians(-6.7f), glm::two_pi<float>() / 90.0f };
+	OrbitConfiguration const moon_orbit{ 0.2f, glm::radians(29.0f), glm::two_pi<float>() / 1.3f };
 
-	glm::vec3 const mars_scale{0.03f};
-	SpinConfiguration const mars_spin{glm::radians(25.0f), glm::two_pi<float>() / 3.0f};
-	OrbitConfiguration const mars_orbit{5.0f, glm::radians(5.7f), glm::two_pi<float>() / 36.0f};
+	glm::vec3 const mars_scale{ 0.03f };
+	SpinConfiguration const mars_spin{ glm::radians(-25.0f), glm::two_pi<float>() / 3.0f };
+	OrbitConfiguration const mars_orbit{ 5.0f, glm::radians(-5.7f), glm::two_pi<float>() / 36.0f };
 
-	glm::vec3 const jupiter_scale{0.5f};
-	SpinConfiguration const jupiter_spin{glm::radians(3.1f), glm::two_pi<float>() / 1.0f};
-	OrbitConfiguration const jupiter_orbit{13.0f, glm::radians(6.1f), glm::two_pi<float>() / 220.0f};
+	glm::vec3 const jupiter_scale{ 0.5f };
+	SpinConfiguration const jupiter_spin{ glm::radians(-3.1f), glm::two_pi<float>() / 1.0f };
+	OrbitConfiguration const jupiter_orbit{ 13.0f, glm::radians(-6.1f), glm::two_pi<float>() / 220.0f };
 
-	glm::vec3 const saturn_scale{0.4f};
-	SpinConfiguration const saturn_spin{glm::radians(27.0f), glm::two_pi<float>() / 1.2f};
-	OrbitConfiguration const saturn_orbit{16.0f, glm::radians(5.5f), glm::two_pi<float>() / 400.0f};
-	glm::vec2 const saturn_ring_scale{1.0f, 1.25f};
+	glm::vec3 const saturn_scale{ 0.4f };
+	SpinConfiguration const saturn_spin{ glm::radians(-27.0f), glm::two_pi<float>() / 1.2f };
+	OrbitConfiguration const saturn_orbit{ 16.0f, glm::radians(-5.5f), glm::two_pi<float>() / 400.0f };
+	glm::vec2 const saturn_ring_scale{ 1.0f, 1.25f };
 
-	glm::vec3 const uranus_scale{0.2f};
-	SpinConfiguration const uranus_spin{glm::radians(98.0f), glm::two_pi<float>() / 2.0f};
-	OrbitConfiguration const uranus_orbit{18.0f, glm::radians(6.5f), glm::two_pi<float>() / 1680.0f};
+	glm::vec3 const uranus_scale{ 0.2f };
+	SpinConfiguration const uranus_spin{ glm::radians(-82.0f), -glm::two_pi<float>() / 2.0f };
+	OrbitConfiguration const uranus_orbit{ 18.0f, glm::radians(-6.5f), glm::two_pi<float>() / 1680.0f };
 
-	glm::vec3 const neptune_scale{0.2f};
-	SpinConfiguration const neptune_spin{glm::radians(28.0f), glm::two_pi<float>() / 2.0f};
-	OrbitConfiguration const neptune_orbit{19.0f, glm::radians(6.4f), glm::two_pi<float>() / 3200.0f};
+	glm::vec3 const neptune_scale{ 0.2f };
+	SpinConfiguration const neptune_spin{ glm::radians(-28.0f), glm::two_pi<float>() / 2.0f };
+	OrbitConfiguration const neptune_orbit{ 19.0f, glm::radians(-6.4f), glm::two_pi<float>() / 3200.0f };
 
 
 	//
@@ -154,15 +158,74 @@ int main()
 
 
 	//
-	// Set up the sun node and other related attributes
+	// Set up the celestial bodies.
 	//
-	Node sun;
-	sun.set_geometry(sphere);
-	sun.set_program(&celestial_body_shader);
-	sun.add_texture("diffuse_texture", sun_texture, GL_TEXTURE_2D);
+	CelestialBody neptune(sphere, &celestial_body_shader, neptune_texture);
+	neptune.set_scale(neptune_scale);
+	neptune.set_spin(neptune_spin);
+	neptune.set_orbit(neptune_orbit);
 
+	CelestialBody uranus(sphere, &celestial_body_shader, uranus_texture);
+	uranus.set_scale(uranus_scale);
+	uranus.set_spin(uranus_spin);
+	uranus.set_orbit(uranus_orbit);
 
-	glClearDepth(1.0);
+	CelestialBody saturn(sphere, &celestial_body_shader, saturn_texture);
+	saturn.set_scale(saturn_scale);
+	saturn.set_spin(saturn_spin);
+	saturn.set_orbit(saturn_orbit);
+	saturn.set_ring(saturn_ring_shape, &celestial_ring_shader, saturn_ring_texture, saturn_ring_scale);
+
+	CelestialBody jupiter(sphere, &celestial_body_shader, jupiter_texture);
+	jupiter.set_scale(jupiter_scale);
+	jupiter.set_spin(jupiter_spin);
+	jupiter.set_orbit(jupiter_orbit);
+
+	CelestialBody mars(sphere, &celestial_body_shader, mars_texture);
+	mars.set_scale(mars_scale);
+	mars.set_spin(mars_spin);
+	mars.set_orbit(mars_orbit);
+
+	CelestialBody moon(sphere, &celestial_body_shader, moon_texture);
+	moon.set_scale(moon_scale);
+	moon.set_spin(moon_spin);
+	moon.set_orbit(moon_orbit);
+
+	CelestialBody earth(sphere, &celestial_body_shader, earth_texture);
+	earth.set_scale(earth_scale);
+	earth.set_spin(earth_spin);
+	earth.set_orbit(earth_orbit);
+	earth.add_child(&moon);
+
+	CelestialBody venus(sphere, &celestial_body_shader, venus_texture);
+	venus.set_scale(venus_scale);
+	venus.set_spin(venus_spin);
+	venus.set_orbit(venus_orbit);
+
+	CelestialBody mercury(sphere, &celestial_body_shader, mercury_texture);
+	mercury.set_scale(mercury_scale);
+	mercury.set_spin(mercury_spin);
+	mercury.set_orbit(mercury_orbit);
+
+	CelestialBody sun(sphere, &celestial_body_shader, sun_texture);
+	sun.set_scale(sun_scale);
+	sun.set_spin(sun_spin);
+	sun.add_child(&mercury);
+	sun.add_child(&venus);
+	sun.add_child(&earth);
+	sun.add_child(&mars);
+	sun.add_child(&jupiter);
+	sun.add_child(&saturn);
+	sun.add_child(&uranus);
+	sun.add_child(&neptune);
+
+	int followedBody = 0;
+	CelestialBody* indexToBody[] = { nullptr, &mercury, &venus, &earth, &moon, &mars, &jupiter, &saturn, &uranus, &neptune};
+
+	//
+	// Define the colour and depth used for clearing.
+	//
+	glClearDepthf(1.0f);
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 
@@ -173,6 +236,8 @@ int main()
 	bool pause_animation = false;
 	bool show_logs = true;
 	bool show_gui = true;
+	bool show_basis = false;
+	float time_scale = 1.0f;
 
 	while (!glfwWindowShouldClose(window)) {
 		//
@@ -180,6 +245,7 @@ int main()
 		//
 		auto const now_time = std::chrono::high_resolution_clock::now();
 		auto const delta_time_us = std::chrono::duration_cast<std::chrono::microseconds>(now_time - last_time);
+		auto const animation_delta_time_us = !pause_animation ? std::chrono::duration_cast<std::chrono::microseconds>(delta_time_us * time_scale) : 0us;
 		last_time = now_time;
 
 
@@ -191,7 +257,11 @@ int main()
 		ImGuiIO const& io = ImGui::GetIO();
 		input_handler.SetUICapture(io.WantCaptureMouse, io.WantCaptureKeyboard);
 		input_handler.Advance();
-		camera.Update(delta_time_us, input_handler);
+
+		CelestialBody* bodyToFollow = indexToBody[followedBody];
+		if (!bodyToFollow) {
+			camera.Update(delta_time_us, input_handler);
+		}
 
 		if (input_handler.GetKeycodeState(GLFW_KEY_F3) & JUST_RELEASED)
 			show_logs = !show_logs;
@@ -218,11 +288,49 @@ int main()
 		//
 		window_manager.NewImGuiFrame();
 
-
 		//
 		// Clear the screen
 		//
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+
+		//
+		// Traverse the scene graph and render all nodes
+		//
+		struct CelestialBodyRef
+		{
+			CelestialBody* body;
+			glm::mat4 parent_transform;
+		};
+		// TODO: Replace this explicit rendering of the Earth and Moon
+		// with a traversal of the scene graph and rendering of all its
+		// nodes.
+
+		glm::mat4 followMatrix;
+
+		std::stack<CelestialBodyRef> stack({ {&sun, glm::mat4(1.f)} });
+		while (!stack.empty() ){
+			const auto& ref = stack.top();
+			stack.pop();
+			const auto transform = ref.body->render(animation_delta_time_us, camera.GetWorldToClipMatrix(), ref.parent_transform, show_basis);
+			if (ref.body == bodyToFollow) {
+				followMatrix = transform;
+			}
+			for (auto& child : ref.body->get_children()) {
+				stack.push({ child, transform });
+			}
+		}
+
+		if (bodyToFollow) {
+			glm::vec3 scale;
+			glm::quat rotation;
+			glm::vec3 translation;
+			glm::vec3 skew;
+			glm::vec4 perspective;
+			glm::decompose(followMatrix, scale, rotation, translation, skew, perspective);
+			camera.mWorld.SetTranslate(translation + glm::normalize(translation) + glm::vec3(0.f, 0.5f, 0.f));
+			camera.mWorld.LookAt(glm::vec3());
+		}
 
 
 		//
@@ -232,17 +340,13 @@ int main()
 		if (opened)
 		{
 			ImGui::Checkbox("Pause the animation", &pause_animation);
+			ImGui::SliderFloat("Time scale", &time_scale, 1e-2f, 100.0f);
+			ImGui::Separator();
+			ImGui::Checkbox("Show basis", &show_basis);
+			ImGui::Separator();
+			ImGui::Combo("Follow Planet", &followedBody, "None\0Mercury\0Venus\0Earth\0Moon\0Mars\0Jupiter\0Saturn\0Uranus\0Neptune\0\0");
 		}
 		ImGui::End();
-		auto const animation_delta_time_us = !pause_animation ? delta_time_us : 0us;
-
-
-		//
-		// Traverse the scene graph and render all nodes
-		//
-		// TODO: Replace this explicit rendering of the Sun with a
-		// traversal of the scene graph and rendering of all its nodes.
-		sun.render(camera.GetWorldToClipMatrix());
 
 
 		//
@@ -250,8 +354,7 @@ int main()
 		//
 		if (show_logs)
 			Log::View::Render();
-		if (show_gui)
-			window_manager.RenderImGuiFrame();
+		window_manager.RenderImGuiFrame(show_gui);
 
 
 		//
@@ -271,6 +374,8 @@ int main()
 	glDeleteTextures(1, &venus_texture);
 	glDeleteTextures(1, &mars_texture);
 	glDeleteTextures(1, &sun_texture);
+
+	bonobo::deinit();
 
 	return EXIT_SUCCESS;
 }

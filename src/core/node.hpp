@@ -1,5 +1,6 @@
 #pragma once
 
+#include "helpers.hpp"
 #include "TRSTransform.h"
 
 #include <glad/glad.h>
@@ -11,45 +12,55 @@
 #include <tuple>
 #include <vector>
 
-namespace bonobo
-{
-	struct mesh_data;
-}
-
 //! \brief Represents a node of a scene graph
 class Node
 {
 public:
-	//! \brief Default constructor.
-	Node();
-
 	//! \brief Render this node.
 	//!
-	//! @param [in] WVP Matrix transforming from world-space to clip-space
-	//! @param [in] parentTransform Matrix transforming from parent-space to
+	//! @param [in] view_projection Matrix transforming from world-space to clip-space
+	//! @param [in] parent_transform Matrix transforming from parent-space to
 	//!             world-space
-	void render(glm::mat4 const& WVP, glm::mat4 const& parentTransform = glm::mat4(1.0f)) const;
+	void render(glm::mat4 const& view_projection,
+	            glm::mat4 const& parent_transform = glm::mat4(1.0f)) const;
 
 	//! \brief Render this node with a specific shader program.
 	//!
-	//! @param [in] WVP Matrix transforming from world-space to clip-space
+	//! Note that the internal transform of this node is **not** used
+	//! during the rendering, only the |view_projection| and |world|
+	//! matrices are.
+	//!
+	//! @param [in] view_projection Matrix transforming from world-space to clip-space
 	//! @param [in] world Matrix transforming from model-space to
 	//!             world-space
 	//! @param [in] program OpenGL shader program to use
 	//! @param [in] set_uniforms function that will take as argument an
 	//!             OpenGL shader program, and will setup that program's
 	//!             uniforms
-	void render(glm::mat4 const& WVP, glm::mat4 const& world,
+	void render(glm::mat4 const& view_projection, glm::mat4 const& world,
 	            GLuint program,
 	            std::function<void (GLuint)> const& set_uniforms = [](GLuint /*programID*/){}) const;
 
 	//! \brief Set the geometry of this node.
+	//!
+	//! It will overwrite any constants provided by an earlier call to
+	//! |set_material_constants()|.
 	//!
 	//! A node without any geometry will not render itself, but its
 	//! children will be rendered if they have any geometry.
 	//!
 	//! @param [in] shape OpenGL data to use as geometry
 	void set_geometry(bonobo::mesh_data const& shape);
+
+	//! \brief Set the material constants of this node.
+	//!
+	//! It will overwrite any constants provided by the geometry.
+	//!
+	//! A node without any geometry will not render itself, but its
+	//! children will be rendered if they have any geometry.
+	//!
+	//! @param [in] constants Material constants to be made available during rendering
+	void set_material_constants(bonobo::material_data const& constants);
 
 	//! \brief Get the number of indices to use.
 	//!
@@ -66,13 +77,23 @@ public:
 	//! A node without a program will not render itself, but its children
 	//! will be rendered if they have one.
 	//!
-	//! @param [in] pointer to the program OpenGL shader program to use;
-	//!             the pointer should not be nul.
+	//! @param [in] program pointer to the program OpenGL shader program to
+	//!             use; the pointer should not be null.
 	//! @param [in] set_uniforms function that will take as argument an
 	//!             OpenGL shader program, and will setup that program's
 	//!             uniforms
 	void set_program(GLuint const* const program,
 	                 std::function<void (GLuint)> const& set_uniforms = [](GLuint /*programID*/){});
+
+	//! \brief Set the name of this node.
+	//!
+	//! This name will be used when pushing debug groups to scope OpenGL
+	//! commands and help when debugging or profiling the application using
+	//! third-party applications.
+	//!
+	//! @param [in] name the name used when creating the debug group during
+	//!             rendering; it will automatically be prefixed by "Render ".
+	void set_name(std::string const& name);
 
 	//! \brief Add a texture to this node.
 	//!
@@ -111,18 +132,19 @@ public:
 
 private:
 	// Geometry data
-	GLuint _vao;
-	GLsizei _vertices_nb;
-	GLsizei _indices_nb;
-	GLenum _drawing_mode;
-	bool _has_indices;
+	GLuint _vao{ 0u };
+	GLsizei _vertices_nb{ 0u };
+	GLsizei _indices_nb{ 0u };
+	GLenum _drawing_mode{ GL_TRIANGLES };
+	bool _has_indices{ false };
 
 	// Program data
-	GLuint const* _program;
+	GLuint const* _program{ nullptr };
 	std::function<void (GLuint)> _set_uniforms;
 
-	// Textures data
+	// Material data
 	std::vector<std::tuple<std::string, GLuint, GLenum>> _textures;
+	bonobo::material_data _constants;
 
 	// Transformation data
 	TRSTransformf _transform;
@@ -131,5 +153,5 @@ private:
 	std::vector<Node const*> _children;
 
 	// Debug data
-	std::string _name;
+	std::string _name{"Render un-named node"};
 };

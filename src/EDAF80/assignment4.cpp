@@ -27,23 +27,31 @@ edaf80::Assignment4::Assignment4(WindowManager& windowManager) :
 	if (window == nullptr) {
 		throw std::runtime_error("Failed to get a window: aborting!");
 	}
+
+	bonobo::init();
+}
+
+edaf80::Assignment4::~Assignment4()
+{
+	bonobo::deinit();
 }
 
 void
 edaf80::Assignment4::run()
 {
 	// Set up the camera
-	mCamera.mWorld.SetTranslate(glm::vec3(0.0f, 0.0f, 6.0f));
-	mCamera.mMouseSensitivity = 0.003f;
-	mCamera.mMovementSpeed = 3.0f; // 3 m/s => 10.8 km/h
+	mCamera.mWorld.SetTranslate(glm::vec3(-40.0f, 14.0f, 6.0f));
+	mCamera.mWorld.LookAt(glm::vec3(0.0f));
+	mCamera.mMouseSensitivity = glm::vec2(0.003f);
+	mCamera.mMovementSpeed = glm::vec3(3.0f); // 3 m/s => 10.8 km/h
 	auto camera_position = mCamera.mWorld.GetTranslation();
 
 	// Create the shader programs
 	ShaderProgramManager program_manager;
 	GLuint fallback_shader = 0u;
 	program_manager.CreateAndRegisterProgram("Fallback",
-	                                         { { ShaderType::vertex, "EDAF80/fallback.vert" },
-	                                           { ShaderType::fragment, "EDAF80/fallback.frag" } },
+	                                         { { ShaderType::vertex, "common/fallback.vert" },
+	                                           { ShaderType::fragment, "common/fallback.frag" } },
 	                                         fallback_shader);
 	if (fallback_shader == 0u) {
 		LogError("Failed to load fallback shader");
@@ -55,7 +63,7 @@ edaf80::Assignment4::run()
 	//       (Check how it was done in assignment 3.)
 	//
 
-	float ellapsed_time_s = 0.0f;
+	float elapsed_time_s = 0.0f;
 
 	//
 	// Todo: Load your geometry
@@ -68,11 +76,16 @@ edaf80::Assignment4::run()
 
 	auto lastTime = std::chrono::high_resolution_clock::now();
 
+	bool pause_animation = true;
+	bool use_orbit_camera = false;
 	auto cull_mode = bonobo::cull_mode_t::disabled;
 	auto polygon_mode = bonobo::polygon_mode_t::fill;
 	bool show_logs = true;
 	bool show_gui = true;
 	bool shader_reload_failed = false;
+	bool show_basis = false;
+	float basis_thickness_scale = 1.0f;
+	float basis_length_scale = 1.0f;
 
 	changeCullMode(cull_mode);
 
@@ -80,7 +93,9 @@ edaf80::Assignment4::run()
 		auto const nowTime = std::chrono::high_resolution_clock::now();
 		auto const deltaTimeUs = std::chrono::duration_cast<std::chrono::microseconds>(nowTime - lastTime);
 		lastTime = nowTime;
-		ellapsed_time_s += std::chrono::duration<float>(deltaTimeUs).count();
+		if (!pause_animation) {
+			elapsed_time_s += std::chrono::duration<float>(deltaTimeUs).count();
+		}
 
 		auto& io = ImGui::GetIO();
 		inputHandler.SetUICapture(io.WantCaptureMouse, io.WantCaptureKeyboard);
@@ -88,6 +103,9 @@ edaf80::Assignment4::run()
 		glfwPollEvents();
 		inputHandler.Advance();
 		mCamera.Update(deltaTimeUs, inputHandler);
+		if (use_orbit_camera) {
+			mCamera.mWorld.LookAt(glm::vec3(0.0f));
+		}
 		camera_position = mCamera.mWorld.GetTranslation();
 
 		if (inputHandler.GetKeycodeState(GLFW_KEY_R) & JUST_PRESSED) {
@@ -145,18 +163,26 @@ edaf80::Assignment4::run()
 
 		bool opened = ImGui::Begin("Scene Control", nullptr, ImGuiWindowFlags_None);
 		if (opened) {
+			ImGui::Checkbox("Pause animation", &pause_animation);
+			ImGui::Checkbox("Use orbit camera", &use_orbit_camera);
+			ImGui::Separator();
 			auto const cull_mode_changed = bonobo::uiSelectCullMode("Cull mode", cull_mode);
 			if (cull_mode_changed) {
 				changeCullMode(cull_mode);
 			}
 			bonobo::uiSelectPolygonMode("Polygon mode", polygon_mode);
+			ImGui::Separator();
+			ImGui::Checkbox("Show basis", &show_basis);
+			ImGui::SliderFloat("Basis thickness scale", &basis_thickness_scale, 0.0f, 100.0f);
+			ImGui::SliderFloat("Basis length scale", &basis_length_scale, 0.0f, 100.0f);
 		}
 		ImGui::End();
 
+		if (show_basis)
+			bonobo::renderBasis(basis_thickness_scale, basis_length_scale, mCamera.GetWorldToClipMatrix());
 		if (show_logs)
 			Log::View::Render();
-		if (show_gui)
-			mWindowManager.RenderImGuiFrame();
+		mWindowManager.RenderImGuiFrame(show_gui);
 
 		glfwSwapBuffers(window);
 	}

@@ -8,6 +8,7 @@
 
 #include <mutex>
 #include <unordered_map>
+#include <memory>
 
 //! \brief A simple class for creating and interacting with windows, using the
 //!        GLFW library.
@@ -39,7 +40,7 @@ public:
 	GLFWwindow* CreateGLFWWindow(std::string const& title, WindowDatum const& data, unsigned int msaa = 1u, bool fullscreen = false, bool resizable = false, SwapStrategy swap = SwapStrategy::enable_vsync);
 	void DestroyWindow(GLFWwindow* const window);
 	void NewImGuiFrame();
-	void RenderImGuiFrame();
+	void RenderImGuiFrame(bool show_gui);
 	void ToggleFullscreenStatusForWindow(GLFWwindow* const window) noexcept;
 
 private:

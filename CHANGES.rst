@@ -1,6 +1,145 @@
 Revision history for CG_Labs
 
 
+v2021.2 2021-12-02
+==================
+
+New features
+------------
+
+* Add content to the default landing page of the documentation;
+* Parse common material constants when loading custom objects via
+  `loadObjects()`;
+* Allow per-axis movement and rotation speed for the camera;
+- Allow orbiting cameras for Lab 3 and 4 of EDAF80;
+* Use *Uniform Buffer Objects* in EDAN35/Lab2 for transforms and light
+  attributes.
+
+Improvements
+------------
+
+* Several debug improvements:
+  - Error out if a node is lacking a VAO or program rather than silently not
+    rendering it;
+  - Un-ignore certain warning messages.
+- Swap “sprint” and “walk” modifiers, so they match the behaviour found in most
+  games;
+- Improve the documentation of `TRSTransform`;
+- Several improvements to EDAN35/Lab2, especially on the performance side.
+
+Changes
+-------
+
+* Use a regular `sampler2D` for the shadow map during light accumulation;
+* Automatically build the documentation using GitHub Actions and host it using
+  GitHub Pages.
+
+Fixes
+-----
+
+* Increase the camera far plane in EDAN35/Lab2 to avoid artefacts during
+  lighting;
+* Use a single rotation tracking system for the camera, allowing `Look*()`
+  methods to be used and not instantly overwritten by other rotations;
+* Set `shadowmap_texel_size`;
+* Make the angular spacing between light sources in EDAN35/Lab2 dependent on
+  the maximum amount of light sources.
+
+Dependencies updates
+--------------------
+
+* Update assimp to 5.1.2, and increase the requirement to 5.1.
+
+
+v2021.1 2021-09-27
+==================
+
+New features
+------------
+
+* Allow hiding the control points from the GUI in the second assignment of
+  EDAF80.
+* Allow pausing the wave animation from the GUI in the fourth assignment of
+  EDAF80.
+
+Improvements
+------------
+
+* Several debug improvements:
+  - Ask for a debug context;
+  - Re-work which debug messages are enabled and disabled, and how push and pop
+    groups are printed.
+  - Always show shader compilation and link logs when available, rather than
+    only when it failed;
+  - Label vertex arrays, buffers, and textures when importing new objects via
+    `bonobo::loadObjects()`;
+  - Add new debug helpers to reduce casting-related warning messages;
+- Enable mipmaps even for opacity textures.
+
+Fixes
+-----
+
+* Disable file logging when unable to open the file.
+* Unlock the mutex on shutdown when file logging was disabled.
+* Add missing includes.
+* Tell MSVC to use UTF-8 for source and executable character sets.
+* Fix more typos.
+* Avoid mismatching type assignments in the basis vector shader.
+* Fix framework deinitialisation in the first assignment of EDAF80.
+* Address several compilation warnings.
+
+
+v2021.0 2021-09-01
+==================
+
+New features
+------------
+
+* Time the different steps in `bonobo::loadObjects()` to easily determine which
+  parts are taking longer.
+* Add helper code to render a right-handed orthonormal basis.
+* Add elapsed time queries to the second assignment of EDAN35, allowing to
+  measure the time taken by the different passes.
+
+Breaking changes
+----------------
+
+* `bonobo::createProgram()` takes shader files relative to the “shaders/” folder.
+
+Improvements
+------------
+
+* Switch away from Travis CI and AppVeyor, and use GitHub Actions instead.
+* Add a more detailed build guide.
+* Avoid loading unused materials in `bonobo::loadObjects()`
+* Several performance and code improvements in the second assignment of EDAN35.
+* Various improvements to the `InputHandler` class, included a rework of the
+  modifier handling that should fix some issues.
+* Label shader programs to help with debugging.
+* Remove duplicated shaders.
+
+Fixes
+-----
+
+* Fixed typos.
+* Fix the rendering of shadow maps in the second assignment of EDAN35.
+* Dereference a CMake variable before using it in a generator expression.
+
+
+Removal
+-------
+
+* Drop `GLStateInspection` and `GLStateInspectionView`; debuggers provide more
+  details than those and at a finer granularity.
+
+Dependencies updates
+--------------------
+
+* Update Dear ImGui to 1.84.2.
+* Update the referenced commits for stb.
+* Update the referenced commits for tinyfiledialogs.
+
+
 v2020.1 2020-09-29
 ==================
 

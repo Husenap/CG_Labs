@@ -30,6 +30,13 @@ edaf80::Assignment3::Assignment3(WindowManager& windowManager) :
 	if (window == nullptr) {
 		throw std::runtime_error("Failed to get a window: aborting!");
 	}
+
+	bonobo::init();
+}
+
+edaf80::Assignment3::~Assignment3()
+{
+	bonobo::deinit();
 }
 
 void
@@ -37,15 +44,15 @@ edaf80::Assignment3::run()
 {
 	// Set up the camera
 	mCamera.mWorld.SetTranslate(glm::vec3(0.0f, 0.0f, 6.0f));
-	mCamera.mMouseSensitivity = 0.003f;
-	mCamera.mMovementSpeed = 3.0f; // 3 m/s => 10.8 km/h
+	mCamera.mMouseSensitivity = glm::vec2(0.003f);
+	mCamera.mMovementSpeed = glm::vec3(3.0f); // 3 m/s => 10.8 km/h
 
 	// Create the shader programs
 	ShaderProgramManager program_manager;
 	GLuint fallback_shader = 0u;
 	program_manager.CreateAndRegisterProgram("Fallback",
-	                                         { { ShaderType::vertex, "EDAF80/fallback.vert" },
-	                                           { ShaderType::fragment, "EDAF80/fallback.frag" } },
+	                                         { { ShaderType::vertex, "common/fallback.vert" },
+	                                           { ShaderType::fragment, "common/fallback.frag" } },
 	                                         fallback_shader);
 	if (fallback_shader == 0u) {
 		LogError("Failed to load fallback shader");
@@ -83,18 +90,10 @@ edaf80::Assignment3::run()
 
 	bool use_normal_mapping = false;
 	auto camera_position = mCamera.mWorld.GetTranslation();
-	auto ambient = glm::vec3(0.1f, 0.1f, 0.1f);
-	auto diffuse = glm::vec3(0.7f, 0.2f, 0.4f);
-	auto specular = glm::vec3(1.0f, 1.0f, 1.0f);
-	auto shininess = 10.0f;
-	auto const phong_set_uniforms = [&use_normal_mapping,&light_position,&camera_position,&ambient,&diffuse,&specular,&shininess](GLuint program){
+	auto const phong_set_uniforms = [&use_normal_mapping,&light_position,&camera_position](GLuint program){
 		glUniform1i(glGetUniformLocation(program, "use_normal_mapping"), use_normal_mapping ? 1 : 0);
 		glUniform3fv(glGetUniformLocation(program, "light_position"), 1, glm::value_ptr(light_position));
 		glUniform3fv(glGetUniformLocation(program, "camera_position"), 1, glm::value_ptr(camera_position));
-		glUniform3fv(glGetUniformLocation(program, "ambient"), 1, glm::value_ptr(ambient));
-		glUniform3fv(glGetUniformLocation(program, "diffuse"), 1, glm::value_ptr(diffuse));
-		glUniform3fv(glGetUniformLocation(program, "specular"), 1, glm::value_ptr(specular));
-		glUniform1f(glGetUniformLocation(program, "shininess"), shininess);
 	};
 
 
@@ -117,9 +116,16 @@ edaf80::Assignment3::run()
 		return;
 	}
 
+	bonobo::material_data demo_material;
+	demo_material.ambient = glm::vec3(0.1f, 0.1f, 0.1f);
+	demo_material.diffuse = glm::vec3(0.7f, 0.2f, 0.4f);
+	demo_material.specular = glm::vec3(1.0f, 1.0f, 1.0f);
+	demo_material.shininess = 10.0f;
+
 	Node demo_sphere;
 	demo_sphere.set_geometry(demo_shape);
-	demo_sphere.set_program(&fallback_shader, set_uniforms);
+	demo_sphere.set_material_constants(demo_material);
+	demo_sphere.set_program(&fallback_shader, phong_set_uniforms);
 
 
 	glClearDepth(1.0);
@@ -129,12 +135,16 @@ edaf80::Assignment3::run()
 
 	auto lastTime = std::chrono::high_resolution_clock::now();
 
+	bool use_orbit_camera = false;
 	std::int32_t demo_sphere_program_index = 0;
 	auto cull_mode = bonobo::cull_mode_t::disabled;
 	auto polygon_mode = bonobo::polygon_mode_t::fill;
 	bool show_logs = true;
 	bool show_gui = true;
 	bool shader_reload_failed = false;
+	bool show_basis = false;
+	float basis_thickness_scale = 1.0f;
+	float basis_length_scale = 1.0f;
 
 	changeCullMode(cull_mode);
 
@@ -149,6 +159,9 @@ edaf80::Assignment3::run()
 		glfwPollEvents();
 		inputHandler.Advance();
 		mCamera.Update(deltaTimeUs, inputHandler);
+		if (use_orbit_camera) {
+			mCamera.mWorld.LookAt(glm::vec3(0.0f));
+		}
 		camera_position = mCamera.mWorld.GetTranslation();
 
 		if (inputHandler.GetKeycodeState(GLFW_KEY_R) & JUST_PRESSED) {
@@ -205,13 +218,24 @@ edaf80::Assignment3::run()
 			}
 			ImGui::Separator();
 			ImGui::Checkbox("Use normal mapping", &use_normal_mapping);
-			ImGui::ColorEdit3("Ambient", glm::value_ptr(ambient));
-			ImGui::ColorEdit3("Diffuse", glm::value_ptr(diffuse));
-			ImGui::ColorEdit3("Specular", glm::value_ptr(specular));
-			ImGui::SliderFloat("Shininess", &shininess, 1.0f, 1000.0f);
+			ImGui::ColorEdit3("Ambient", glm::value_ptr(demo_material.ambient));
+			ImGui::ColorEdit3("Diffuse", glm::value_ptr(demo_material.diffuse));
+			ImGui::ColorEdit3("Specular", glm::value_ptr(demo_material.specular));
+			ImGui::SliderFloat("Shininess", &demo_material.shininess, 1.0f, 1000.0f);
 			ImGui::SliderFloat3("Light Position", glm::value_ptr(light_position), -20.0f, 20.0f);
+			ImGui::Separator();
+			ImGui::Checkbox("Use orbit camera", &use_orbit_camera);
+			ImGui::Separator();
+			ImGui::Checkbox("Show basis", &show_basis);
+			ImGui::SliderFloat("Basis thickness scale", &basis_thickness_scale, 0.0f, 100.0f);
+			ImGui::SliderFloat("Basis length scale", &basis_length_scale, 0.0f, 100.0f);
 		}
 		ImGui::End();
+
+		demo_sphere.set_material_constants(demo_material);
+
+		if (show_basis)
+			bonobo::renderBasis(basis_thickness_scale, basis_length_scale, mCamera.GetWorldToClipMatrix());
 
 		opened = ImGui::Begin("Render Time", nullptr, ImGuiWindowFlags_None);
 		if (opened)
@@ -220,8 +244,7 @@ edaf80::Assignment3::run()
 
 		if (show_logs)
 			Log::View::Render();
-		if (show_gui)
-			mWindowManager.RenderImGuiFrame();
+		mWindowManager.RenderImGuiFrame(show_gui);
 
 		glfwSwapBuffers(window);
 	}
