@@ -222,10 +222,7 @@ int main()
 	int followedBody = 0;
 	CelestialBody* indexToBody[] = { nullptr, &mercury, &venus, &earth, &moon, &mars, &jupiter, &saturn, &uranus, &neptune};
 
-	//
-	// Define the colour and depth used for clearing.
-	//
-	glClearDepthf(1.0f);
+	glClearDepth(1.0);
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 

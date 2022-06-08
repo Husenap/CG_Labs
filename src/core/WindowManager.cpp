@@ -10,14 +10,14 @@
 
 namespace
 {
-	const int default_opengl_major_version = 4;
-	const int default_opengl_minor_version = 1;
+	const int default_opengl_major_version = 3;
+	const int default_opengl_minor_version = 3;
 	const int default_glsl_version = default_opengl_major_version * 100 + default_opengl_minor_version * 10;
 
 	void ErrorCallback(int error, char const* description)
 	{
 		if (error == 65543 || error == 65545)
-			LogError("Couldn't create an OpenGL %d.%d context.\nIf you are using old hardware/drivers which support OpenGL 3.3 but not higher, try using the 'OpenGL_3.3' branch.", default_opengl_major_version, default_opengl_minor_version);
+			LogError("Couldn't create an OpenGL %d.%d context.\nEnsure you are using hardware/drivers which support at least OpenGL 3.3.", default_opengl_major_version, default_opengl_minor_version);
 		else
 			LogError("GLFW error %d was thrown:\n\t%s\n", error, description);
 	}
