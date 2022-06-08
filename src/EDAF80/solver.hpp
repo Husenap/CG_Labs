@@ -88,7 +88,7 @@ struct SpatialPartition {
 };
 
 class Solver {
-	static constexpr glm::vec3 Gravity = {0.0f, -982.f, 0.0f};
+	glm::vec3 Gravity = {0.0f, -982.f, 0.0f};
 
 public:
 	void addObject() {
@@ -141,7 +141,7 @@ public:
 			ImGui::DragFloat("Red Gravity", &redGravity);
 			ImGui::DragFloat("Map Radius", &mapRadius);
 			ImGui::DragFloat("Cell Size", &CellSize);
-			ImGui::Text("Number of Objects: %d", objects.size());
+			ImGui::Text("Number of Objects: %lu", objects.size());
 			ImGui::Text("Number of Collisions: %d", numCollisions);
 			ImGui::Text("Average Radius: %f", averageRadius);
 		}

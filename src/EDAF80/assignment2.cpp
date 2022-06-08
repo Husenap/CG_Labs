@@ -225,14 +225,14 @@ edaf80::Assignment2::run()
 			if (use_linear) {
 				const int index0 = static_cast<int>(std::floor(alpha)) % control_point_locations.size();
 				const int index1 = (index0 + 1) % control_point_locations.size();
-				const auto pos = interpolation::evalLERP(control_point_locations[index0], control_point_locations[index1], std::fmodf(alpha, 1.f));
+				const auto pos = interpolation::evalLERP(control_point_locations[index0], control_point_locations[index1], std::fmod(alpha, 1.f));
 				circle_rings.get_transform().SetTranslate(pos);
 			} else {
 				const int index0 = (static_cast<int>(std::floor(alpha)) + control_point_locations.size() - 1) % control_point_locations.size();
 				const int index1 = (index0 + 1) % control_point_locations.size();
 				const int index2 = (index1 + 1) % control_point_locations.size();
 				const int index3 = (index2 + 1) % control_point_locations.size();
-				const auto pos = interpolation::evalCatmullRom(control_point_locations[index0], control_point_locations[index1], control_point_locations[index2], control_point_locations[index3], catmull_rom_tension, std::fmodf(alpha, 1.f));
+				const auto pos = interpolation::evalCatmullRom(control_point_locations[index0], control_point_locations[index1], control_point_locations[index2], control_point_locations[index3], catmull_rom_tension, std::fmod(alpha, 1.f));
 				circle_rings.get_transform().SetTranslate(pos);
 			}
 			circle_rings.get_transform().LookTowards(circle_rings.get_transform().GetTranslation() - previousPosition);
