@@ -221,14 +221,14 @@ void edaf80::Assignment2::run()
 			const auto previousPosition = circle_rings.get_transform().GetTranslation();
 			if (use_linear)
 			{
-				const int index0 = static_cast<int>(std::floor(alpha)) % control_point_locations.size();
+				const int index0 = static_cast<int>(std::floor(alpha)) % static_cast<int>(control_point_locations.size());
 				const int index1 = (index0 + 1) % control_point_locations.size();
 				const auto pos = interpolation::evalLERP(control_point_locations[index0], control_point_locations[index1], std::fmod(alpha, 1.f));
 				circle_rings.get_transform().SetTranslate(pos);
 			}
 			else
 			{
-				const int index0 = (static_cast<int>(std::floor(alpha)) + control_point_locations.size() - 1) % control_point_locations.size();
+				const int index0 = (static_cast<int>(std::floor(alpha)) + control_point_locations.size() - 1) % static_cast<int>(control_point_locations.size());
 				const int index1 = (index0 + 1) % control_point_locations.size();
 				const int index2 = (index1 + 1) % control_point_locations.size();
 				const int index3 = (index2 + 1) % control_point_locations.size();

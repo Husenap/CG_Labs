@@ -26,7 +26,7 @@ edaf80::Assignment3::Assignment3(WindowManager& windowManager) :
 {
 	WindowManager::WindowDatum window_datum{ inputHandler, mCamera, config::resolution_x, config::resolution_y, 0, 0, 0, 0};
 
-	window = mWindowManager.CreateGLFWWindow("EDAF80: Assignment 3", window_datum, config::msaa_rate);
+	window = mWindowManager.CreateGLFWWindow("EDAF80: Assignment 3", window_datum, config::msaa_rate, false, true);
 	if (window == nullptr) {
 		throw std::runtime_error("Failed to get a window: aborting!");
 	}
@@ -43,7 +43,8 @@ void
 edaf80::Assignment3::run()
 {
 	// Set up the camera
-	mCamera.mWorld.SetTranslate(glm::vec3(0.0f, 0.0f, 6.0f));
+	mCamera.mWorld.SetTranslate(glm::vec3(2.0f, 0.0f, -6.0f));
+	mCamera.mWorld.LookAt({});
 	mCamera.mMouseSensitivity = glm::vec2(0.003f);
 	mCamera.mMovementSpeed = glm::vec3(3.0f); // 3 m/s => 10.8 km/h
 
@@ -67,6 +68,14 @@ edaf80::Assignment3::run()
 	if (diffuse_shader == 0u)
 		LogError("Failed to load diffuse shader");
 
+	GLuint phong_shader = 0u;
+	program_manager.CreateAndRegisterProgram("Phong",
+	                                         { { ShaderType::vertex, "EDAF80/phong.vert" },
+	                                           { ShaderType::fragment, "EDAF80/phong.frag" } },
+	                                         phong_shader);
+	if (phong_shader == 0u)
+		LogError("Failed to load phong shader");
+
 	GLuint normal_shader = 0u;
 	program_manager.CreateAndRegisterProgram("Normal",
 	                                         { { ShaderType::vertex, "EDAF80/normal.vert" },
@@ -83,12 +92,21 @@ edaf80::Assignment3::run()
 	if (texcoord_shader == 0u)
 		LogError("Failed to load texcoord shader");
 
-	auto light_position = glm::vec3(-2.0f, 4.0f, 2.0f);
+	GLuint skybox_shader = 0u;
+	program_manager.CreateAndRegisterProgram("Skybox",
+	                                         { { ShaderType::vertex, "EDAF80/skybox.vert" },
+	                                           { ShaderType::fragment, "EDAF80/skybox.frag" } },
+	                                         skybox_shader);
+	if (skybox_shader == 0u)
+		LogError("Failed to load skybox shader");
+
+
+	auto light_position = glm::vec3(5.0f, 4.0f, -0.62f);
 	auto const set_uniforms = [&light_position](GLuint program){
 		glUniform3fv(glGetUniformLocation(program, "light_position"), 1, glm::value_ptr(light_position));
 	};
 
-	bool use_normal_mapping = false;
+	bool use_normal_mapping = true;
 	auto camera_position = mCamera.mWorld.GetTranslation();
 	auto const phong_set_uniforms = [&use_normal_mapping,&light_position,&camera_position](GLuint program){
 		glUniform1i(glGetUniformLocation(program, "use_normal_mapping"), use_normal_mapping ? 1 : 0);
@@ -97,10 +115,22 @@ edaf80::Assignment3::run()
 	};
 
 
+	const auto my_cube_map_id = bonobo::loadTextureCubeMap(
+		config::resources_path("cubemaps/NissiBeach2/posx.jpg"),
+		config::resources_path("cubemaps/NissiBeach2/negx.jpg"),
+		config::resources_path("cubemaps/NissiBeach2/posy.jpg"),
+		config::resources_path("cubemaps/NissiBeach2/negy.jpg"),
+		config::resources_path("cubemaps/NissiBeach2/posz.jpg"),
+		config::resources_path("cubemaps/NissiBeach2/negz.jpg"));
+
+	const auto leather_albedo = bonobo::loadTexture2D(config::resources_path("textures/leather_red_02_coll1_2k.jpg"));
+	const auto leather_normal = bonobo::loadTexture2D(config::resources_path("textures/leather_red_02_nor_2k.jpg"));
+	const auto leather_roughness = bonobo::loadTexture2D(config::resources_path("textures/leather_red_02_rough_2k.jpg"));
+
 	//
 	// Set up the two spheres used.
 	//
-	auto skybox_shape = parametric_shapes::createSphere(20.0f, 100u, 100u);
+	auto skybox_shape = parametric_shapes::createSphere(500.0f, 5u, 5u);
 	if (skybox_shape.vao == 0u) {
 		LogError("Failed to retrieve the mesh for the skybox");
 		return;
@@ -108,7 +138,8 @@ edaf80::Assignment3::run()
 
 	Node skybox;
 	skybox.set_geometry(skybox_shape);
-	skybox.set_program(&fallback_shader, set_uniforms);
+	skybox.set_program(&skybox_shader, set_uniforms);
+	skybox.add_texture("skybox_texture", my_cube_map_id, GL_TEXTURE_CUBE_MAP);
 
 	auto demo_shape = parametric_shapes::createSphere(1.5f, 40u, 40u);
 	if (demo_shape.vao == 0u) {
@@ -117,15 +148,19 @@ edaf80::Assignment3::run()
 	}
 
 	bonobo::material_data demo_material;
-	demo_material.ambient = glm::vec3(0.1f, 0.1f, 0.1f);
-	demo_material.diffuse = glm::vec3(0.7f, 0.2f, 0.4f);
-	demo_material.specular = glm::vec3(1.0f, 1.0f, 1.0f);
-	demo_material.shininess = 10.0f;
+	demo_material.ambient = glm::vec3(0.382f, 0.382f, 0.382f);
+	demo_material.diffuse = glm::vec3(0.814f, 0.77f, 0.515f);
+	demo_material.specular = glm::vec3(0.98f, 0.925f, 0.75f);
+	demo_material.shininess = 2.0f;
 
 	Node demo_sphere;
 	demo_sphere.set_geometry(demo_shape);
 	demo_sphere.set_material_constants(demo_material);
-	demo_sphere.set_program(&fallback_shader, phong_set_uniforms);
+	demo_sphere.set_program(&phong_shader, phong_set_uniforms);
+	demo_sphere.add_texture("skybox_texture", my_cube_map_id, GL_TEXTURE_CUBE_MAP);
+	demo_sphere.add_texture("albedo_texture", leather_albedo, GL_TEXTURE_2D);
+	demo_sphere.add_texture("normal_texture", leather_normal, GL_TEXTURE_2D);
+	demo_sphere.add_texture("roughness_texture", leather_roughness, GL_TEXTURE_2D);
 
 
 	glClearDepth(1.0);
@@ -199,7 +234,7 @@ edaf80::Assignment3::run()
 		bonobo::changePolygonMode(polygon_mode);
 
 
-		skybox.render(mCamera.GetWorldToClipMatrix());
+		skybox.render(mCamera.GetWorldToClipMatrix(), glm::scale(glm::mat4(1.f), glm::vec3(-1.f)));
 		demo_sphere.render(mCamera.GetWorldToClipMatrix());
 
 
