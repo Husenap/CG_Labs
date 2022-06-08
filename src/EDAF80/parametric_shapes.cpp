@@ -127,6 +127,7 @@ parametric_shapes::createSphere(float const radius,
 	struct Vertex {
 		glm::vec3 position;
 		glm::vec3 normal;
+		glm::vec2 texcoord;
 		glm::vec3 tangent;
 		glm::vec3 binormal;
 	};
@@ -159,6 +160,8 @@ parametric_shapes::createSphere(float const radius,
 
 			vertex.normal = glm::cross(vertex.tangent, vertex.binormal);
 
+			vertex.texcoord = glm::vec2(angleTheta / glm::two_pi<float>(), anglePhi / glm::pi<float>());
+
 			vertices.push_back(vertex);
 		}
 	}
@@ -186,6 +189,9 @@ parametric_shapes::createSphere(float const radius,
 
 	glEnableVertexAttribArray(static_cast<unsigned int>(bonobo::shader_bindings::normals));
 	glVertexAttribPointer(static_cast<unsigned int>(bonobo::shader_bindings::normals), 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<const GLvoid*>(offsetof(Vertex, normal)));
+
+	glEnableVertexAttribArray(static_cast<unsigned int>(bonobo::shader_bindings::texcoords));
+	glVertexAttribPointer(static_cast<unsigned int>(bonobo::shader_bindings::texcoords), 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<const GLvoid*>(offsetof(Vertex, texcoord)));
 
 	glEnableVertexAttribArray(static_cast<unsigned int>(bonobo::shader_bindings::tangents));
 	glVertexAttribPointer(static_cast<unsigned int>(bonobo::shader_bindings::tangents), 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<const GLvoid*>(offsetof(Vertex, tangent)));
