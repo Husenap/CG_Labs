@@ -14,32 +14,40 @@ parametric_shapes::createQuad(float const width, float const height,
                               unsigned int const horizontal_split_count,
                               unsigned int const vertical_split_count)
 {
-	auto const vertices = std::array<glm::vec3, 4>{
-		glm::vec3(0.0f,  0.0f,   0.0f),
-		glm::vec3(width, 0.0f,   0.0f),
-		glm::vec3(width, height, 0.0f),
-		glm::vec3(0.0f,  height, 0.0f)
+	struct Vertex {
+		glm::vec3 position;
+		glm::vec2 texcoord;
 	};
 
-	auto const index_sets = std::array<glm::uvec3, 2>{
-		glm::uvec3(0u, 1u, 2u),
-		glm::uvec3(0u, 2u, 3u)
-	};
+	float deltaX = width / (horizontal_split_count + 1);
+	float deltaZ = height / (vertical_split_count + 1);
 
-	bonobo::mesh_data data;
+	std::vector<Vertex> vertices;
+	std::vector<glm::uvec3> indices;
 
-	if (horizontal_split_count > 0u || vertical_split_count > 0u)
-	{
-		LogError("parametric_shapes::createQuad() does not support tesselation.");
-		return data;
+	for (unsigned int i = 0; i <= horizontal_split_count + 1; ++i) {
+		for (unsigned int j = 0; j <= vertical_split_count + 1; ++j) {
+			Vertex vertex;
+			vertex.position = glm::vec3(i * deltaX - width * 0.5f, 0.f, j * deltaZ - height * 0.5f);
+			vertex.texcoord = glm::vec2(
+				static_cast<float>(i) / static_cast<float>(horizontal_split_count + 1),
+				static_cast<float>(j) / static_cast<float>(vertical_split_count + 1));
+			vertices.push_back(vertex);
+		}
+	}
+	for (unsigned int i = 0; i <= horizontal_split_count; ++i) {
+		for (unsigned int j = 0; j <= vertical_split_count; ++j) {
+			const unsigned int bottomLeft = i + j * (horizontal_split_count + 2);
+			const unsigned int bottomRight = bottomLeft + 1;
+			const unsigned int topLeft = bottomLeft + horizontal_split_count + 2;
+			const unsigned int topRight = topLeft + 1;
+			indices.push_back({ bottomLeft, bottomRight, topRight });
+			indices.push_back({ bottomLeft, topRight, topLeft });
+		}
 	}
 
-	//
-	// NOTE:
-	//
-	// Only the values preceeded by a `\todo` tag should be changed, the
-	// other ones are correct!
-	//
+
+	bonobo::mesh_data data;
 
 	// Create a Vertex Array Object: it will remember where we stored the
 	// data on the GPU, and  which part corresponds to the vertices, which
@@ -75,24 +83,11 @@ parametric_shapes::createQuad(float const width, float const height,
 	// tell Vertex Array where to find them, and how to interpret the data
 	// within that buffer.
 	//
-	// You will see shaders in more detail in lab 3, but for now they are
-	// just pieces of code running on the GPU and responsible for moving
-	// all the vertices to clip space, and assigning a colour to each pixel
-	// covered by geometry.
-	// Those shaders have inputs, some of them are the data we just stored
-	// in a buffer object. We need to tell the Vertex Array which inputs
-	// are enabled, and this is done by the following line of code, which
-	// enables the input for vertices:
 	glEnableVertexAttribArray(static_cast<unsigned int>(bonobo::shader_bindings::vertices));
+	glVertexAttribPointer(static_cast<unsigned int>(bonobo::shader_bindings::vertices), 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<GLvoid const*>(offsetof(Vertex, position)));
 
-	// Once an input is enabled, we need to explain where the data comes
-	// from, and how it interpret it. When calling the following function,
-	// the Vertex Array will automatically use the current buffer bound to
-	// GL_ARRAY_BUFFER as its source for the data. How to interpret it is
-	// specified below:
-	glVertexAttribPointer(static_cast<unsigned int>(bonobo::shader_bindings::vertices),
-	                      3, GL_FLOAT, GL_FALSE, sizeof(vertices[0]),
-	                      reinterpret_cast<GLvoid const*>(0x0));
+	glEnableVertexAttribArray(static_cast<unsigned int>(bonobo::shader_bindings::texcoords));
+	glVertexAttribPointer(static_cast<unsigned int>(bonobo::shader_bindings::texcoords), 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<GLvoid const*>(offsetof(Vertex, texcoord)));
 
 	// Now, let's allocate a second one for the indices.
 	//
@@ -103,10 +98,9 @@ parametric_shapes::createQuad(float const width, float const height,
 	// elements, aka. indices!
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, data.ibo);
 
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_sets.size() * sizeof(index_sets[0]),
-	             index_sets.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(indices[0]), indices.data(), GL_STATIC_DRAW);
 
-	data.indices_nb = static_cast<GLsizei>(index_sets.size() * 3);
+	data.indices_nb = static_cast<GLsizei>(indices.size() * 3);
 
 	// All the data has been recorded, we can unbind them.
 	glBindVertexArray(0u);
@@ -185,7 +179,7 @@ parametric_shapes::createSphere(float const radius,
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(static_cast<unsigned int>(bonobo::shader_bindings::vertices));
-	glVertexAttribPointer(static_cast<unsigned int>(bonobo::shader_bindings::vertices), 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<const GLvoid*>(0));
+	glVertexAttribPointer(static_cast<unsigned int>(bonobo::shader_bindings::vertices), 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<const GLvoid*>(offsetof(Vertex, position)));
 
 	glEnableVertexAttribArray(static_cast<unsigned int>(bonobo::shader_bindings::normals));
 	glVertexAttribPointer(static_cast<unsigned int>(bonobo::shader_bindings::normals), 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<const GLvoid*>(offsetof(Vertex, normal)));

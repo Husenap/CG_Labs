@@ -23,7 +23,7 @@ edaf80::Assignment4::Assignment4(WindowManager& windowManager) :
 {
 	WindowManager::WindowDatum window_datum{ inputHandler, mCamera, config::resolution_x, config::resolution_y, 0, 0, 0, 0};
 
-	window = mWindowManager.CreateGLFWWindow("EDAF80: Assignment 4", window_datum, config::msaa_rate);
+	window = mWindowManager.CreateGLFWWindow("EDAF80: Assignment 4", window_datum, config::msaa_rate, false, true);
 	if (window == nullptr) {
 		throw std::runtime_error("Failed to get a window: aborting!");
 	}
@@ -58,16 +58,67 @@ edaf80::Assignment4::run()
 		return;
 	}
 
-	//
-	// Todo: Insert the creation of other shader programs.
-	//       (Check how it was done in assignment 3.)
-	//
+	GLuint water_shader = 0u;
+	program_manager.CreateAndRegisterProgram("Water",
+	                                         { { ShaderType::vertex, "EDAF80/water.vert" },
+	                                           { ShaderType::fragment, "EDAF80/water.frag" } },
+	                                         water_shader);
+	if (water_shader == 0u) {
+		LogError("Failed to load water shader");
+		return;
+	}
+	GLuint skybox_shader = 0u;
+	program_manager.CreateAndRegisterProgram("Skybox",
+	                                         { { ShaderType::vertex, "EDAF80/skybox.vert" },
+	                                           { ShaderType::fragment, "EDAF80/skybox.frag" } },
+	                                         skybox_shader);
+	if (skybox_shader == 0u)
+		LogError("Failed to load skybox shader");
 
 	float elapsed_time_s = 0.0f;
 
-	//
-	// Todo: Load your geometry
-	//
+	// Water Parameters
+	glm::vec3 waterColorDeep(0.f, 0.f, 0.1f);
+	glm::vec3 waterColorShallow(0.f, 0.5f, 0.5f);
+
+	const auto set_water_uniforms = [&](GLuint program) {
+		glUniform1f(glGetUniformLocation(program, "time"), elapsed_time_s);
+		glUniform3fv(glGetUniformLocation(program, "water_color_deep"), 1, glm::value_ptr(waterColorDeep));
+		glUniform3fv(glGetUniformLocation(program, "water_color_shallow"), 1, glm::value_ptr(waterColorShallow));
+		glUniform3fv(glGetUniformLocation(program, "camera_position"), 1, glm::value_ptr(camera_position));
+	};
+
+	// Setup Skybox
+	const auto my_cube_map_id = bonobo::loadTextureCubeMap(
+		config::resources_path("cubemaps/NissiBeach2/posx.jpg"),
+		config::resources_path("cubemaps/NissiBeach2/negx.jpg"),
+		config::resources_path("cubemaps/NissiBeach2/posy.jpg"),
+		config::resources_path("cubemaps/NissiBeach2/negy.jpg"),
+		config::resources_path("cubemaps/NissiBeach2/posz.jpg"),
+		config::resources_path("cubemaps/NissiBeach2/negz.jpg"));
+	auto skybox_shape = parametric_shapes::createSphere(900.0f, 10u, 10u);
+	if (skybox_shape.vao == 0u) {
+		LogError("Failed to retrieve the mesh for the skybox");
+		return;
+	}
+	Node skybox;
+	skybox.set_geometry(skybox_shape);
+	skybox.set_program(&skybox_shader);
+	skybox.add_texture("skybox_texture", my_cube_map_id, GL_TEXTURE_CUBE_MAP);
+
+	// Setup Water Plane
+	const auto waves_texture = bonobo::loadTexture2D(config::resources_path("textures/waves.png"));
+	auto plane_shape = parametric_shapes::createQuad(100.f, 100.f, 1000u, 1000u);
+	if (plane_shape.vao == 0u) {
+		LogError("Failed to retrieve the mesh for the plane");
+		return;
+	}
+	Node water;
+	water.set_geometry(plane_shape);
+	water.set_program(&water_shader, set_water_uniforms);
+	water.add_texture("waves_texture", waves_texture, GL_TEXTURE_2D);
+	water.add_texture("skybox_texture", my_cube_map_id, GL_TEXTURE_CUBE_MAP);
+
 
 	glClearDepth(1.0);
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -135,10 +186,6 @@ edaf80::Assignment4::run()
 		glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);
 		glViewport(0, 0, framebuffer_width, framebuffer_height);
 
-		//
-		// Todo: If you need to handle inputs, you can do it here
-		//
-
 
 		mWindowManager.NewImGuiFrame();
 
@@ -147,18 +194,12 @@ edaf80::Assignment4::run()
 
 
 		if (!shader_reload_failed) {
-			//
-			// Todo: Render all your geometry here.
-			//
+			water.render(mCamera.GetWorldToClipMatrix());
+			skybox.render(mCamera.GetWorldToClipMatrix(), glm::scale(glm::mat4(1.f), glm::vec3(-1.f)));
 		}
 
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-		//
-		// Todo: If you want a custom ImGUI window, you can set it up
-		//       here
-		//
 
 
 		bool opened = ImGui::Begin("Scene Control", nullptr, ImGuiWindowFlags_None);
@@ -171,6 +212,9 @@ edaf80::Assignment4::run()
 				changeCullMode(cull_mode);
 			}
 			bonobo::uiSelectPolygonMode("Polygon mode", polygon_mode);
+			ImGui::Separator();
+			ImGui::ColorEdit3("Deep Water Color", glm::value_ptr(waterColorDeep));
+			ImGui::ColorEdit3("Shallow Water Color", glm::value_ptr(waterColorShallow));
 			ImGui::Separator();
 			ImGui::Checkbox("Show basis", &show_basis);
 			ImGui::SliderFloat("Basis thickness scale", &basis_thickness_scale, 0.0f, 100.0f);
