@@ -22,3 +22,7 @@ log.txt
 *.sdf
 *.suo
 *.vcxproj.user
+
+
+.idea/
+cmake-build-*/

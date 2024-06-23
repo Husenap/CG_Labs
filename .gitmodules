@@ -1,0 +1,3 @@
+[submodule "src/EDAF80/libtetris"]
+	path = src/EDAF80/libtetris
+	url = https://github.com/pelp/libtetris.git

@@ -76,6 +76,19 @@ target_link_libraries (
 copy_dlls (EDAF80_Assignment4 "${CMAKE_CURRENT_BINARY_DIR}")
 
 
+
+
+
+
+add_library(tetris STATIC
+        libtetris/src/bag.c
+        libtetris/src/framebuffer.c
+        libtetris/src/lcg_rand.c
+        libtetris/src/libtetris.c
+        libtetris/src/piece.c)
+set_target_properties(tetris PROPERTIES LANGUAGE C)
+target_include_directories(tetris INTERFACE libtetris/src)
+
 # Assignment 5
 add_executable (EDAF80_Assignment5)
 target_sources (
@@ -84,8 +97,17 @@ target_sources (
 		[[assignment5.hpp]]
 		[[assignment5.cpp]]
 )
-target_link_libraries (EDAF80_Assignment5 PRIVATE assignment_setup)
+target_link_libraries (EDAF80_Assignment5 PRIVATE assignment_setup tetris)
 copy_dlls (EDAF80_Assignment5 "${CMAKE_CURRENT_BINARY_DIR}")
+
+
+
+
+
+
+
+
+
 
 
 install (
