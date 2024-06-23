@@ -61,16 +61,19 @@ uint32_t get_color(int8_t v) {
   return color;
 }
 
+static constexpr int RESOLUTION_X = 600;
+static constexpr int RESOLUTION_Y = 1000;
+
 edaf80::Assignment5::Assignment5(WindowManager &windowManager)
     : mCamera(0.5f * glm::half_pi<float>(),
-              static_cast<float>(config::resolution_x) /
-                  static_cast<float>(config::resolution_y),
+              static_cast<float>(RESOLUTION_X) /
+                  static_cast<float>(RESOLUTION_Y),
               0.01f, 1000.0f),
       inputHandler(), mWindowManager(windowManager), window(nullptr) {
   WindowManager::WindowDatum window_datum{inputHandler,
                                           mCamera,
-                                          config::resolution_x,
-                                          config::resolution_y,
+                                          RESOLUTION_X,
+                                          RESOLUTION_Y,
                                           0,
                                           0,
                                           0,
