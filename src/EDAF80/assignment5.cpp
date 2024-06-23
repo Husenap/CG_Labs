@@ -291,21 +291,20 @@ void edaf80::Assignment5::run() {
     }
 
     if (!shader_reload_failed) {
-      //
-      // Todo: Render all your geometry here.
-      //
       arcade_machine.render(mCamera.GetWorldToClipMatrix());
 
       static float rot_angle = 0.0f;
-      const float target_angle = (static_cast<float>(key_input.left) - static_cast<float>(key_input.right)) * 0.2f;
-      rot_angle = rot_angle + (target_angle-rot_angle) * delta_time * 20.f;
+      const float target_angle = (static_cast<float>(key_input.left) -
+                                  static_cast<float>(key_input.right)) *
+                                 0.2f;
+      rot_angle = rot_angle + (target_angle - rot_angle) * delta_time * 20.f;
 
-      const auto rot = glm::rotate(glm::mat4(1.0f), rot_angle, glm::vec3(0.f, 0.f, 1.f));
+      const auto rot =
+          glm::rotate(glm::mat4(1.0f), rot_angle, glm::vec3(0.f, 0.f, 1.f));
       const auto trans =
           glm::translate(glm::mat4(1.0f), glm::vec3(-0.462f, 2.35f, 0.75f));
 
-      joystick.render(mCamera.GetWorldToClipMatrix(),
-                      trans * rot);
+      joystick.render(mCamera.GetWorldToClipMatrix(), trans * rot);
 
       screen.render(mCamera.GetWorldToClipMatrix());
     }
