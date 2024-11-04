@@ -4,6 +4,7 @@ uniform sampler2D diffuse_texture;
 uniform int has_diffuse_texture;
 
 uniform float time;
+uniform float flash;
 
 in VS_OUT {
     vec2 texcoord;
@@ -54,6 +55,7 @@ void main() {
         // col *= vignette;
         col *= (12.+mod(uv.y*30.+time,1.))/19.;
 
+        col = mix(col, vec3(1.0), flash*flash);
 
         frag_color = vec4(col, 1.0);
     } else {

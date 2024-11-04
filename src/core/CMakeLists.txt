@@ -18,6 +18,7 @@ target_sources (
 		[[TRSTransform.inl]]
 		[[various.hpp]]
 		[[WindowManager.hpp]]
+		[[AudioEngine.hpp]]
 	PRIVATE
 		[[Bonobo.cpp]]
 		[[helpers.cpp]]
@@ -29,6 +30,7 @@ target_sources (
 		[[ShaderProgramManager.cpp]]
 		[[various.cpp]]
 		[[WindowManager.cpp]]
+		[[AudioEngine.cpp]]
 )
 
 target_include_directories (
