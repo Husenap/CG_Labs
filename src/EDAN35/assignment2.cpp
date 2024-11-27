@@ -640,7 +640,7 @@ edan35::Assignment2::run() {
                 glActiveTexture(GL_TEXTURE2);
                 glBindTexture(GL_TEXTURE_2D, textures[toU(Texture::ShadowMap)]);
                 glUniform1i(accumulate_light_shader_locations.shadow_texture, 2);
-                glBindSampler(2, samplers[toU(Sampler::Linear)]);
+                glBindSampler(2, samplers[toU(Sampler::Nearest)]);
 
                 glBindVertexArray(cone_geometry.vao);
                 glDrawArrays(cone_geometry.drawing_mode, 0, cone_geometry.vertices_nb);

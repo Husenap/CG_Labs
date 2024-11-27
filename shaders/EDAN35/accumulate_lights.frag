@@ -54,16 +54,15 @@ void main() {
 
     vec4 homogeneous_shadow_position = lights[light_index].view_projection * vec4(position, 1.0);
     vec3 shadow_position = homogeneous_shadow_position.xyz / homogeneous_shadow_position.w;
-    float shadow = 9.0;
+    float shadow = 0.0;
     for (int dy = -1; dy <= 1; ++dy) {
         for (int dx = -1; dx <= 1; ++dx) {
-            float shadow_depth = texture(shadow_texture, shadow_position.xy * 0.5 + 0.5 + vec2(dx, dy) * shadowmap_texel_size, 0).r * 2.0 - 1.0;
-            if (shadow_position.z > shadow_depth + ShadowEpsilon) {
-                shadow -= 1.0;
+            float shadow_depth = texture(shadow_texture, shadow_position.xy * 0.5 + 0.5 + vec2(dx, dy) * shadowmap_texel_size).r * 2.0 - 1.0;
+            if (shadow_position.z <= shadow_depth + ShadowEpsilon) {
+                shadow += 1.0 / 9.0;
             }
         }
     }
-    shadow /= 9.0;
 
     float distance_falloff = dot((light_position - position), (light_position - position));
     float angle_falloff = (1.0f - MinCosine) / max(dot(-L, light_direction) - MinCosine, 0.0);
@@ -72,5 +71,5 @@ void main() {
     vec3 col = shadow * light_intensity * light_color / attenuation;
 
     light_diffuse_contribution = vec4(col * max(0, dot(N, L)), 1.0);
-    light_specular_contribution = vec4(col * max(0, dot(V, reflect(-L, N))), 1.0);
+    light_specular_contribution = vec4(col * pow(max(0, dot(V, reflect(-L, N))), 50.0), 1.0);
 }
